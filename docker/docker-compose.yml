@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  go-proxy-newbing:
+    # 镜像名称
+    image: adams549659584/go-proxy-newbing
+    # 容器名称
+    container_name: go-proxy-newbing  
+    # 自启动
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    # environment:
+    #   - Go_Proxy_BingAI_SOCKS_URL=192.168.0.88:1070
+    #   - Go_Proxy_BingAI_SOCKS_USER=xxx
+    #   - Go_Proxy_BingAI_SOCKS_PWD=xxx
+  
+#   go-proxy-newbing:
+#     # 镜像名称
+#     image: adams549659584/go-proxy-newbing
+#     # 容器名称
+#     container_name: go-proxy-newbing
+#     build:
+#       context: ../
+#       dockerfile: docker/Dockerfile      
+#     # 自启动
+#     restart: unless-stopped
+#     # 加入指定网络
+#     networks:
+#       - MyNetwork    
+#     ports:
+#       - 8888:8080
+#     environment:
+#       - Go_Proxy_BingAI_SOCKS_URL=192.168.0.88:1070
+#       # - Go_Proxy_BingAI_SOCKS_USER=xxx
+#       # - Go_Proxy_BingAI_SOCKS_PWD=xxx        
+
+# networks:
+#   MyNetwork:
+#     external: true
+
