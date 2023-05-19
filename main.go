@@ -1,7 +1,7 @@
 package main
 
 import (
-	"adams549659584/go-proxy-newbing/api"
+	"gsfilm/go-proxy-newbing/api"
 	"log"
 	"net/http"
 	"os"

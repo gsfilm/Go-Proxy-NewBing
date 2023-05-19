@@ -3,7 +3,7 @@ version: '3'
 services:
   go-proxy-newbing:
     # 镜像名称
-    image: adams549659584/go-proxy-newbing
+    image: gsfilm/go-proxy-newbing
     # 容器名称
     container_name: go-proxy-newbing  
     # 自启动
@@ -17,7 +17,7 @@ services:
   
 #   go-proxy-newbing:
 #     # 镜像名称
-#     image: adams549659584/go-proxy-newbing
+#     image: gsfilm/go-proxy-newbing
 #     # 容器名称
 #     container_name: go-proxy-newbing
 #     build:

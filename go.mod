@@ -1,4 +1,4 @@
-module adams549659584/go-proxy-newbing
+module gsfilm/go-proxy-newbing
 
 go 1.20
 

@@ -72,7 +72,7 @@
 
 - https://bing-vercel.vcanbb.top
 
-- https://go-proxy-newbing-adams549659584.vercel.app
+- https://go-proxy-newbing-gsfilm.vercel.app
 
 ### Render 搭建
 
@@ -122,10 +122,10 @@ Go_Proxy_BingAI_USER_TOKEN_3=xxx ...
 
 ```bash
 # 运行容器 监听8080 端口
-docker run -d -p 8080:8080 --name go-proxy-newbing --restart=unless-stopped adams549659584/go-proxy-newbing
+docker run -d -p 8080:8080 --name go-proxy-newbing --restart=unless-stopped gsfilm/go-proxy-newbing
 
 # 配置 socks 环境变量
-docker run -e Go_Proxy_BingAI_SOCKS_URL=192.168.0.88:1070 -e Go_Proxy_BingAI_SOCKS_USER=xxx -e Go_Proxy_BingAI_SOCKS_PWD=xxx -d -p 8080:8080 --name go-proxy-newbing --restart=unless-stopped adams549659584/go-proxy-newbing
+docker run -e Go_Proxy_BingAI_SOCKS_URL=192.168.0.88:1070 -e Go_Proxy_BingAI_SOCKS_USER=xxx -e Go_Proxy_BingAI_SOCKS_PWD=xxx -d -p 8080:8080 --name go-proxy-newbing --restart=unless-stopped gsfilm/go-proxy-newbing
 ```
 
 - docker compose 示例
@@ -136,7 +136,7 @@ version: '3'
 services:
   go-proxy-newbing:
     # 镜像名称
-    image: adams549659584/go-proxy-newbing
+    image: gsfilm/go-proxy-newbing
     # 容器名称
     container_name: go-proxy-newbing  
     # 自启动
@@ -151,7 +151,7 @@ services:
 
 ### Release
 
-在 [Github Releases](https://github.com/adams549659584/go-proxy-newbing/releases) 下载适用于对应平台的压缩包，解压后可得到可执行文件 go-proxy-newbing，直接运行即可。
+在 [Github Releases](https://github.com/gsfilm/go-proxy-newbing/releases) 下载适用于对应平台的压缩包，解压后可得到可执行文件 go-proxy-newbing，直接运行即可。
 
 ### Railway
 
@@ -174,7 +174,7 @@ RAILWAY_DOCKERFILE_PATH=docker/Dockerfile
 
 ### Vercel
 
-一键部署，点这里 => [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/adams549659584/go-proxy-newbing&project-name=go-proxy-newbing&repository-name=go-proxy-newbing-vercel)
+一键部署，点这里 => [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/gsfilm/go-proxy-newbing&project-name=go-proxy-newbing&repository-name=go-proxy-newbing-vercel)
 
 ![Vercel 一键部署](./docs/img/vercel-1.png)
 
@@ -182,7 +182,7 @@ RAILWAY_DOCKERFILE_PATH=docker/Dockerfile
 
 ### Render
 
-一键部署，点这里 => [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/adams549659584/go-proxy-newbing)
+一键部署，点这里 => [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/gsfilm/go-proxy-newbing)
 
 ![Render 一键部署](./docs/img/render-1.png)
 

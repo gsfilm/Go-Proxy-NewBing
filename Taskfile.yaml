@@ -228,8 +228,8 @@ tasks:
         }        
   docker:
     cmds:
-      - docker build -t adams549659584/go-proxy-newbing:{{.BUILD_VERSION}} -f docker/Dockerfile .
-      - docker tag adams549659584/go-proxy-newbing:{{.BUILD_VERSION}} adams549659584/go-proxy-newbing
+      - docker build -t gsfilm/go-proxy-newbing:{{.BUILD_VERSION}} -f docker/Dockerfile .
+      - docker tag gsfilm/go-proxy-newbing:{{.BUILD_VERSION}} gsfilm/go-proxy-newbing
   default:
     cmds:
       - task: clean

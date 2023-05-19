@@ -1,8 +1,8 @@
 package api
 
 import (
-	"adams549659584/go-proxy-newbing/common"
-	"adams549659584/go-proxy-newbing/web"
+	"gsfilm/go-proxy-newbing/common"
+	"gsfilm/go-proxy-newbing/web"
 	"net/http"
 )
 
