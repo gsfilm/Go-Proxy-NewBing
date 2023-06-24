@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -20,57 +19,47 @@ import (
 )
 
 var (
-	BING_CHAT_DOMAIN = "https://sydney.bing.com"
-	BING_CHAT_URL, _ = url.Parse(BING_CHAT_DOMAIN + "/sydney/ChatHub")
-	BING_URL, _      = url.Parse("https://www.bing.com")
+	BING_SYDNEY_DOMAIN = "https://sydney.bing.com"
+	// BING_CHAT_URL, _ = url.Parse(BING_CHAT_DOMAIN + "/sydney/ChatHub")
+	BING_SYDNEY_URL, _ = url.Parse(BING_SYDNEY_DOMAIN)
+	BING_URL, _        = url.Parse("https://www.bing.com")
 	// EDGE_SVC_URL, _     = url.Parse("https://edgeservices.bing.com")
 	KEEP_REQ_HEADER_MAP = map[string]bool{
-		"Accept":                   true,
-		"Accept-Encoding":          true,
-		"Accept-Language":          true,
-		"Referer":                  true,
-		"Connection":               true,
-		"Cookie":                   true,
-		"Upgrade":                  true,
-		"User-Agent":               true,
-		"Sec-Websocket-Extensions": true,
-		"Sec-Websocket-Key":        true,
-		"Sec-Websocket-Version":    true,
-		"X-Request-Id":             true,
-		"X-Forwarded-For":          true,
+		"Accept":                         true,
+		"Accept-Encoding":                true,
+		"Accept-Language":                true,
+		"Referer":                        true,
+		"Connection":                     true,
+		"Cookie":                         true,
+		"Upgrade":                        true,
+		"User-Agent":                     true,
+		"Sec-Websocket-Extensions":       true,
+		"Sec-Websocket-Key":              true,
+		"Sec-Websocket-Version":          true,
+		"X-Request-Id":                   true,
+		"X-Forwarded-For":                true,
+		"Content-Length":                 true,
+		"Content-Type":                   true,
+		"Access-Control-Request-Headers": true,
+		"Access-Control-Request-Method":  true,
 	}
 	DEL_LOCATION_DOMAINS = []string{
 		"https://cn.bing.com",
 		"https://www.bing.com",
 	}
-	USER_TOKEN_COOKIE_NAME     = "_U"
-	RAND_IP_COOKIE_NAME        = "BingAI_Rand_IP"
-	PROXY_WEB_PREFIX_PATH      = "/web/"
-	PROXY_WEB_PAGE_PATH        = PROXY_WEB_PREFIX_PATH + "index.html"
-	USER_TOKEN_ENV_NAME_PREFIX = "Go_Proxy_BingAI_USER_TOKEN"
-	USER_TOKEN_LIST            []string
-	RAND_COOKIE_INDEX_NAME     = "BingAI_Rand_CK"
+	USER_TOKEN_COOKIE_NAME = "_U"
+	RAND_COOKIE_INDEX_NAME = "BingAI_Rand_CK"
+	RAND_IP_COOKIE_NAME    = "BingAI_Rand_IP"
+	PROXY_WEB_PREFIX_PATH  = "/web/"
+	PROXY_WEB_PAGE_PATH    = PROXY_WEB_PREFIX_PATH + "index.html"
 )
-
-func init() {
-	initUserToken()
-}
-
-func initUserToken() {
-	for _, env := range os.Environ() {
-		if strings.HasPrefix(env, USER_TOKEN_ENV_NAME_PREFIX) {
-			parts := strings.SplitN(env, "=", 2)
-			USER_TOKEN_LIST = append(USER_TOKEN_LIST, parts[1])
-		}
-	}
-}
 
 func NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {
 	originalScheme := "http"
 	httpsSchemeName := "https"
 	var originalHost string
 	var originalPath string
-	var originalDomain string
+	// var originalDomain string
 	var randIP string
 	var resCKRandIndex string
 	director := func(req *http.Request) {
@@ -79,18 +68,18 @@ func NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {
 		}
 		originalHost = req.Host
 		originalPath = req.URL.Path
-		originalDomain = fmt.Sprintf("%s:%s", originalScheme, originalHost)
+		// originalDomain = fmt.Sprintf("%s:%s", originalScheme, originalHost)
 
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.Host = target.Host
 
-		originalRefer := req.Referer()
-		if originalRefer != "" && !strings.Contains(originalRefer, PROXY_WEB_PAGE_PATH) {
-			req.Header.Set("Referer", strings.ReplaceAll(originalRefer, originalDomain, BING_URL.String()))
-		} else {
-			req.Header.Set("Referer", fmt.Sprintf("%s/search?q=Bing+AI", BING_URL.String()))
-		}
+		// originalRefer := req.Referer()
+		// if originalRefer != "" && !strings.Contains(originalRefer, originalDomain) {
+		// 	req.Header.Set("Referer", strings.ReplaceAll(originalRefer, originalDomain, BING_URL.String()))
+		// } else {
+		req.Header.Set("Referer", fmt.Sprintf("%s/search?q=Bing+AI", BING_URL.String()))
+		// }
 
 		// 同一会话尽量保持相同的随机IP
 		ckRandIP, _ := req.Cookie(RAND_IP_COOKIE_NAME)
@@ -164,14 +153,6 @@ func NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {
 		// 	}
 		// }
 
-		// 设置随机ip cookie
-		ckRandIP := &http.Cookie{
-			Name:  RAND_IP_COOKIE_NAME,
-			Value: randIP,
-			Path:  "/",
-		}
-		res.Header.Set("Set-Cookie", ckRandIP.String())
-
 		// 设置服务器 cookie 对应索引
 		if resCKRandIndex != "" {
 			ckRandIndex := &http.Cookie{
@@ -193,14 +174,27 @@ func NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {
 				if strings.HasPrefix(location, delLocationDomain) {
 					res.Header.Set("Location", location[len(delLocationDomain):])
 					log.Println("Del Location Domain ：", location)
+					log.Println("RandIP : ", randIP)
+					// 换新ip
+					randIP = GetRandomIP()
 				}
 			}
 		}
 
+		// 设置随机ip cookie
+		ckRandIP := &http.Cookie{
+			Name:  RAND_IP_COOKIE_NAME,
+			Value: randIP,
+			Path:  "/",
+		}
+		res.Header.Set("Set-Cookie", ckRandIP.String())
+
 		// 跨域
-		res.Header.Set("Access-Control-Allow-Origin", "*")
-		res.Header.Set("Access-Control-Allow-Methods", "*")
-		res.Header.Set("Access-Control-Allow-Headers", "*")
+		// if IS_DEBUG_MODE {
+		// 	res.Header.Set("Access-Control-Allow-Origin", "*")
+		// 	res.Header.Set("Access-Control-Allow-Methods", "*")
+		// 	res.Header.Set("Access-Control-Allow-Headers", "*")
+		// }
 
 		return nil
 	}
@@ -225,18 +219,15 @@ func NewSingleHostReverseProxy(target *url.URL) *httputil.ReverseProxy {
 	}
 
 	// socks
-	socksUrl := os.Getenv("Go_Proxy_BingAI_SOCKS_URL")
-	if socksUrl != "" {
-		socksUser := os.Getenv("Go_Proxy_BingAI_SOCKS_USER")
-		socksPwd := os.Getenv("Go_Proxy_BingAI_SOCKS_PWD")
+	if SOCKS_URL != "" {
 		var socksAuth *proxy.Auth
-		if socksUser != "" && socksPwd != "" {
+		if SOCKS_USER != "" && SOCKS_PWD != "" {
 			socksAuth = &proxy.Auth{
-				User:     socksUser,
-				Password: socksPwd,
+				User:     SOCKS_USER,
+				Password: SOCKS_PWD,
 			}
 		}
-		s5Proxy, err := proxy.SOCKS5("tcp", socksUrl, socksAuth, proxy.Direct)
+		s5Proxy, err := proxy.SOCKS5("tcp", SOCKS_URL, socksAuth, proxy.Direct)
 		if err != nil {
 			panic(err)
 		}

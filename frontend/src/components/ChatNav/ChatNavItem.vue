@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import {} from 'vue';
 
-const props = defineProps<{
+defineProps<{
   navConfig: {
     key: string;
     label: string;

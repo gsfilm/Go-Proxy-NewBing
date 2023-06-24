@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: go-proxy-newbing
+    name: go-proxy-bingai
     # oregon: frankfurt
     plan: free
     env: go
-    buildCommand: go build -ldflags="-s -w" -tags netgo -trimpath -o go-proxy-newbing main.go
-    startCommand: ./go-proxy-newbing
+    buildCommand: go build -ldflags="-s -w" -tags netgo -trimpath -o go-proxy-bingai main.go
+    startCommand: ./go-proxy-bingai

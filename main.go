@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gsfilm/go-proxy-newbing/api"
+	"adams549659584/go-proxy-bingai/api"
 	"log"
 	"net/http"
 	"os"
@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/sydney/ChatHub", api.ChatHub)
+	http.HandleFunc("/sysconf", api.SysConf)
+
+	http.HandleFunc("/sydney/", api.Sydney)
 
 	http.HandleFunc("/web/", api.WebStatic)
 
@@ -21,7 +23,7 @@ func main() {
 	}
 	addr := ":" + port
 
-	log.Println("Starting newbing Proxy At " + addr)
+	log.Println("Starting BingAI Proxy At " + addr)
 
 	srv := &http.Server{
 		Addr:         addr,

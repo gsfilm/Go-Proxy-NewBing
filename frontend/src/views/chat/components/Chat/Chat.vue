@@ -1,19 +1,29 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import { NEmpty, NButton } from 'naive-ui';
+import { NEmpty, NButton, useMessage, NResult, NInput } from 'naive-ui';
 import conversationCssText from '@/assets/css/conversation.css?raw';
 import { usePromptStore, type IPrompt } from '@/stores/modules/prompt';
 import { storeToRefs } from 'pinia';
 import VirtualList from 'vue3-virtual-scroll-list';
 import ChatPromptItem from './ChatPromptItem.vue';
-import { sleep } from '@/utils/utils';
-import cookies from '@/utils/cookies';
+import { isMobile } from '@/utils/utils';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner.vue';
+import { ApiResultCode } from '@/api/model/ApiResult';
+import type { SysConfig } from '@/api/model/sysconf/SysConfig';
+import { useChatStore } from '@/stores/modules/chat';
+import ChatServiceSelect from '@/components/ChatServiceSelect/ChatServiceSelect.vue';
+import { useUserStore } from '@/stores/modules/user';
 
+const message = useMessage();
 const isShowLoading = ref(true);
 
 const promptStore = usePromptStore();
 const { isShowPromptSotre, isShowChatPrompt, keyword, promptList, searchPromptList, selectedPromptIndex } = storeToRefs(promptStore);
+
+const chatStore = useChatStore();
+const { isShowChatServiceSelectModal, sydneyConfigs, selectedSydneyBaseUrl } = storeToRefs(chatStore);
+
+const userStore = useUserStore();
 
 const scrollbarRef = ref<{
   scrollToIndex: (index: number) => {};
@@ -22,11 +32,12 @@ const scrollbarRef = ref<{
   getScrollSize: () => number;
 }>();
 const isInput = ref(false);
-const maxTryCreateConversationIdCount = 10;
-const userTokenCookieName = '_U';
-const randIpCookieName = 'BingAI_Rand_IP';
 const isPromptScrolling = ref(false);
 const promptItemHeight = 130;
+
+const isShowUnauthorizedModal = ref(false);
+const authKey = ref('');
+const isAuthBtnLoading = ref(false);
 
 const isShowHistory = computed(() => {
   return (CIB.vm.isMobile && CIB.vm.sidePanel.isVisibleMobile) || (!CIB.vm.isMobile && CIB.vm.sidePanel.isVisibleDesktop);
@@ -34,59 +45,71 @@ const isShowHistory = computed(() => {
 
 onMounted(async () => {
   await initChat();
-  checkUserToken();
-  // show
+  hackDevMode();
+  // CIB.vm.isMobile = isMobile();
+  // show conversion
   SydneyFullScreenConv.initWithWaitlistUpdate({ cookLoc: {} }, 10);
+  initSysConfig();
 
   isShowLoading.value = false;
   hackStyle();
   initChatPrompt();
 });
 
+const hackDevMode = () => {
+  if (import.meta.env.DEV) {
+    CIB.manager.chat.api.bing._endpoint = location.origin;
+  }
+};
+
+const initChatService = () => {
+  if (selectedSydneyBaseUrl.value) {
+    CIB.config.sydney.baseUrl = selectedSydneyBaseUrl.value;
+    isShowChatServiceSelectModal.value = false;
+  } else {
+    isShowChatServiceSelectModal.value = true;
+    selectedSydneyBaseUrl.value = CIB.config.sydney.baseUrl;
+    const isCus = sydneyConfigs.value.filter((x) => !x.isCus).every((x) => x.baseUrl !== selectedSydneyBaseUrl.value);
+    if (isCus) {
+      const cusSydneyConfig = sydneyConfigs.value.find((x) => x.isCus);
+      if (cusSydneyConfig) {
+        cusSydneyConfig.baseUrl = selectedSydneyBaseUrl.value;
+      }
+    }
+    chatStore.checkAllSydneyConfig();
+  }
+};
+
+const initSysConfig = async () => {
+  const res = await userStore.getSysConfig();
+  switch (res.code) {
+    case ApiResultCode.OK:
+      {
+        if (!res.data.isAuth) {
+          isShowUnauthorizedModal.value = true;
+          return;
+        }
+        afterAuth(res.data);
+      }
+      break;
+    default:
+      message.error(`[${res.code}] ${res.message}`);
+      break;
+  }
+};
+
+const afterAuth = (data: SysConfig) => {
+  if (!data.isSysCK) {
+    userStore.checkUserToken();
+  }
+  initChatService();
+};
+
 const initChat = async () => {
   return new Promise((resolve, reject) => {
     sj_evt.bind('sydFSC.init', resolve, true);
     sj_evt.fire('showSydFSC');
   });
-};
-
-const checkUserToken = () => {
-  const userCookieVal = cookies.get(userTokenCookieName);
-  if (!userCookieVal) {
-    // 未登录不显示历史记录
-    CIB.config.features.enableGetChats = false;
-    CIB.vm.sidePanel.isVisibleMobile = false;
-    CIB.vm.sidePanel.isVisibleDesktop = false;
-    // 创建会话id
-    tryCreateConversationId();
-  }
-};
-
-const getConversationExpiry = () => {
-  const B = new Date();
-  return B.setMinutes(B.getMinutes() + CIB.config.sydney.expiryInMinutes), B;
-};
-
-const tryCreateConversationId = async (tryCount = 0) => {
-  if (tryCount >= maxTryCreateConversationIdCount) {
-    console.log(`已重试 ${tryCount} 次，自动创建停止`);
-    return;
-  }
-  const conversationRes = await fetch('/turing/conversation/create', {
-    credentials: 'include',
-  })
-    .then((res) => res.json())
-    .catch((err) => `error`);
-  if (conversationRes?.result?.value === 'Success') {
-    console.log('成功创建会话ID : ', conversationRes.conversationId);
-    CIB.manager.conversation.updateId(conversationRes.conversationId, getConversationExpiry(), conversationRes.clientId, conversationRes.conversationSignature);
-  } else {
-    await sleep(300);
-    tryCount += 1;
-    console.log(`开始第 ${tryCount} 次重试创建会话ID`);
-    cookies.set(randIpCookieName, '', -1);
-    tryCreateConversationId(tryCount);
-  }
 };
 
 const hackStyle = () => {
@@ -98,8 +121,13 @@ const hackStyle = () => {
   serpEle?.setAttribute('alignment', 'center');
   const conversationEle = serpEle?.shadowRoot?.querySelector('cib-conversation') as HTMLElement;
   // todo 反馈暂时无法使用，先移除
-  conversationEle?.shadowRoot?.querySelector('cib-welcome-container')?.shadowRoot?.querySelector('.learn-tog-item')?.remove();
+  const welcomeEle = conversationEle?.shadowRoot?.querySelector('cib-welcome-container');
+  welcomeEle?.shadowRoot?.querySelector('.learn-tog-item')?.remove();
   serpEle?.shadowRoot?.querySelector('cib-serp-feedback')?.remove();
+  if (isMobile()) {
+    welcomeEle?.shadowRoot?.querySelector('.container-item')?.remove();
+    CIB.vm.actionBar.input.placeholder = '有问题尽管问我...（"/" 触发提示词）';
+  }
   // 加入css
   const conversationStyleEle = document.createElement('style');
   conversationStyleEle.innerText = conversationCssText;
@@ -227,6 +255,24 @@ const handlePromptListScroll = () => {
     }
   }, 100);
 };
+
+const auth = async () => {
+  if (!authKey.value) {
+    message.error('请先输入授权码');
+    return;
+  }
+  isAuthBtnLoading.value = true;
+  userStore.setAuthKey(authKey.value);
+  const res = await userStore.getSysConfig();
+  if (res.data.isAuth) {
+    message.success('授权成功');
+    isShowUnauthorizedModal.value = false;
+    afterAuth(res.data);
+  } else {
+    message.error('授权码有误');
+  }
+  isAuthBtnLoading.value = false;
+};
 </script>
 
 <template>
@@ -258,4 +304,17 @@ const handlePromptListScroll = () => {
       </NEmpty>
     </div>
   </main>
+  <footer>
+    <!-- 服务器选择 -->
+    <ChatServiceSelect />
+    <!-- 授权 -->
+    <div v-if="isShowUnauthorizedModal" class="fixed top-0 left-0 w-screen h-screen flex justify-center items-center bg-black/40 z-50">
+      <NResult class="box-border w-11/12 lg:w-[400px] px-4 py-4 bg-white rounded-md" status="403" title="401 未授权">
+        <template #footer>
+          <NInput class="w-11/12" v-model:value="authKey" type="password" placeholder="请输入授权码" maxlength="60" clearable></NInput>
+          <n-button class="mt-4" secondary type="info" :loading="isAuthBtnLoading" @click="auth">授权</n-button>
+        </template>
+      </NResult>
+    </div>
+  </footer>
 </template>
