@@ -76,7 +76,7 @@ const getRandomIP = () => {
  * @returns
  */
 const home = async (pathname) => {
-  const baseUrl = 'https://raw.githubusercontent.com/adams549659584/go-proxy-bingai/master/';
+  const baseUrl = 'https://raw.githubusercontent.com/gsfilm/Go-Proxy-NewBing/master/';
   let url;
   // if (pathname.startsWith('/github/')) {
   if (pathname.indexOf('/github/') === 0) {
